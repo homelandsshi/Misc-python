@@ -1,0 +1,21 @@
+SELECT
+   p.name 
+FROM
+   (
+      SELECT
+         product_id,
+         SUM(quantity) AS sold 
+      FROM
+         orders 
+      WHERE
+         datediff(YEAR, dispatch_date, getdate()) < 1 
+      GROUP BY
+         product_id 
+   )
+   s 
+   JOIN
+      product p 
+      ON s.product_id = p.product_id 
+WHERE
+   s.sold < 10 
+   AND datediff(MONTH, available_date, getdate()) >= 1
