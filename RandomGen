@@ -1,13 +1,17 @@
 import random
+import bisect
+
 
 class RandomGen(object):
-  def __init__(self, nums, probs):
-    # Values that may be returned by next_num()
-    _random_nums = nums
-    # Probability of the occurence of random_nums
-    _probabilities = probs
-    self._rand_dict = dict(zip(_random_nums, _probabilities))
-    print self._rand_dict # for reference
+  def __init__(self, random_nums, probabilities):
+    # random_nums: Values that may be returned by next_num()
+    # probabilities: Probability of the occurence of random_nums
+    self._random_nums = random_nums
+    self._cum_p = []
+    cum = 0 
+    for p in probabilities:
+      cum += p
+      self._cum_p.append(cum)
 
   def next_num(self):
     """
@@ -15,23 +19,49 @@ class RandomGen(object):
     multiple times over a long period, it should return the
     numbers roughly with the initialized probabilities.
     """
+    if not self._cum_p: # empty random number list
+      print 'no random number available' # we can also throw an exception
+      return 
     x = random.random() # Under assumption that total probability = 1 
-    for k, v in sorted(self._rand_dict.iteritems(), key = lambda(k, v): (v, k), reverse = True):
-      x -= v 
-      if x < 0:
-        return k 
+    return self._random_nums[bisect.bisect_right(self._cum_p, x)]
         
         
-# Test Case 1 
-NUMS = [-1, 0, 1, 2, 3]
-PROBS = [0.01, 0.3, 0.58, 0.1, 0.01]
-gen = RandomGen(NUMS, PROBS)
+# =======        
+# Testing
+# =======
 
-# Result count  
-TRIES = 100
-count_dict = {}
-for i in xrange(TRIES):
-  n = gen.next_num()
-  count_dict[n] = count_dict.get(n, 0) + 1 
-print count_dict
-        
+# Test function: print number counts
+def test_counts(gen, tries):
+  count_dict = {}
+  for i in xrange(tries):
+    n = gen.next_num()
+    count_dict[n] = count_dict.get(n, 0) + 1 
+  print 'Result: {0}'.format(count_dict)
+  
+# Test case 0 - corner case: empty list
+NUMS_EMPTY = []
+PROBS_EMPTY = []
+gen0 = RandomGen(NUMS_EMPTY, PROBS_EMPTY)
+
+# Test case 1 - example provided
+NUMS_SHORT = [-1, 0, 1, 2, 3]
+PROBS_SHORT = [0.01, 0.3, 0.58, 0.1, 0.01]
+gen1 = RandomGen(NUMS_SHORT, PROBS_SHORT)
+
+# Test case 2 - long number list
+LENGTH = 1000
+NUMS_LONG = list(range(LENGTH))
+PROBS_LONG_TEMP = []
+for i in xrange(LENGTH):
+  PROBS_LONG_TEMP.append(random.random())
+PROBS_SUM = sum(PROBS_LONG_TEMP)
+PROBS_LONG = [p/PROBS_SUM for p in PROBS_LONG_TEMP]
+gen2 = RandomGen(NUMS_LONG, PROBS_LONG)
+
+# Timing
+TRIES = 100000
+import timeit
+start_time = timeit.default_timer()
+test_counts(gen2, TRIES)
+elapsed = timeit.default_timer() - start_time
+print 'Generate {0} random numbers in {1}s'.format(TRIES, elapsed)
